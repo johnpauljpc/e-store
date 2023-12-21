@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}login{% endblock %}
+
+{% load crispy_forms_tags%}
+
+{% block content %} 
+<div class="signup-container">
+    
+
+    <h3>Login form</h3>
+    <form action="" method="post">
+        {% csrf_token %}
+        {{form|crispy}}
+       
+
+        {% if request.GET.next %}
+        <!-- To redirect to previous page after login -->
+        <input type="hidden" value="{{request.GET.next}}" name="next">
+        {% endif %}
+
+        <button class="btn btn-outline-info">Signup</button>
+    </form>
+    <p>Lost or forgot your password? <a href="#">Reset password</a></p>
+</div>
+
+{% endblock content %} 

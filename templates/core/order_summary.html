@@ -1,0 +1,69 @@
+ {%extends 'base.html' %}
+ {% load cart_tags %}
+{% load static %}
+
+
+{% block content %} 
+
+  <!--Main layout-->
+
+<div class="table-responsive text-nowrap">
+
+<h1>Order Summary</h1>
+<b>total </b>- {{orders.order_total|number_to_words}} naira (&#8358;{{orders.order_total}})
+
+  <table class="table">
+    <thead>
+      <tr>
+        <strong><th scope="col">#</th></strong>
+        <th scope="col">Item</th>
+        <th scope="col">Price</th>
+        <th scope="col">Quantity</th>
+        <th scope="col">Total Price</th>
+        
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td scope="col"><b>{{forloop.counter}}</b></td>
+        <td>{{item.item.title}}</td>
+        <td>&#8358;{{item.item.price}}</td>
+        <td>
+         <a href="{% url 'decrease-item-qty' item.item.slug %}"> <li class="fas fa-minus mr-2"></li></a>{{item.quantity}}
+         <a href="{% url 'increase-item-qty' item.item.slug %}"><li class="fas fa-plus ml-2"></li></a>
+         </td>
+       <td> 
+    
+        {% if item.item.discount_price %}
+        
+       &#8358;{{item.get_total_item_discount_price}}<span class=" ml-2 badge red"> saving &#8358;{{item.amount_saved}}</span>
+       {%else%}
+       &#8358;{{item.get_total_item_price}} 
+       {%endif%}
+     <a href="{% url 'remove-item' item.item.slug %}"> <li class=" text-danger fas fa-trash float-right"></li></a>
+   </td>
+       
+      </tr>
+      {% endfor %}
+      <tr>
+        
+        <td colspan="4" class="text-weight-bold"><strong>Total</strong></td>
+        <td><strong class="text-weight-bold">&#8358;{{orders.order_total}} </strong></td>
+      
+      </tr>
+   
+      <tr>
+        <td colspan="5" class="text-center">
+          <a class=" btn btn-default mr-2 " href="/"><li class="fas ">&#xf291;</li> Continue shopping<li class="fas ml-1 ">&#xf290;</li>   </a>
+
+          <a class=" btn btn-warning ml-2" href="#"><li class="fas mr-1 "> &#xf2b5; </li>Proceed to Checkout <li class="fas mr-1 "> &#xf2b5; </li> </a>
+        </td>
+      </tr>
+
+    </tbody>
+  </table>
+&#xf291;
+</div>
+
+{% endblock content %}

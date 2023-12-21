@@ -1,0 +1,24 @@
+
+body .container--wrapper{
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 100vh;
+
+}
+
+body .main.container{
+  flex: 1;
+  /* display: none; */
+}
+
+
+/* FORM */
+.signup-container{
+  max-width: 600px;
+}
+
+.alert.alert-error{
+  background-color: rgb(255, 56, 56);
+  color: white;
+}
