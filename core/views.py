@@ -8,7 +8,10 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, DetailView
 
 
-from .models import Item, Order, OrderItem, Category
+
+
+from .models import Item, Order, OrderItem, Category, BillingAddress
+from .forms import CheckoutForm
 
 
 
@@ -108,15 +111,8 @@ def remove_item(request, slug):
         messages.info(request, "You have no active order!")
     return redirect("order-summary")
 
-class CheckoutView(View):
-    def get(self, request):
 
-        return render(request, "core/checkout-page.html")
-    
-    def post(self, request):
-        print("pass")
 
-checkout_view = CheckoutView.as_view()
 
 @login_required
 def add_to_cart(request, slug):
@@ -173,6 +169,59 @@ def remove_from_cart(request, slug):
     return redirect("product", slug=slug)
 
 
+class CheckoutView(LoginRequiredMixin,View):
+    def get(self, request):
+        form = CheckoutForm()
+        order = Order.objects.filter(user = request.user, ordered = False).first()
+        context = {
+            "form":form,
+            "order":order
+        }
+
+        return render(request, "core/checkout-page.html", context)
+    
+    def post(self, request):
+        form = CheckoutForm(request.POST)
+        order = Order.objects.filter(user = request.user, ordered = False).first()
+        context = {
+            "form":form,
+            "order":order
+        }
+        
+        try:
+            order = Order.objects.filter(user = request.user, ordered = False).first()
+            print("order")
+            
+            if form.is_valid():
+                shipping_zip = form.cleaned_data.get('shipping_zip')
+                state = form.cleaned_data.get("state")
+                shipping_address = form.cleaned_data.get("shipping_address")
+                phone_number  = form.cleaned_data.get("phone_number")
+                payment_option = form.cleaned_data.get("payment_option")
+                print("form    ", form.cleaned_data)
+                address = BillingAddress.objects.create(user = request.user, state=state,  shipping_zip=shipping_zip,
+                                         shipping_address = shipping_address, 
+                                        phone_number = phone_number, 
+                                        payment_option=payment_option)
+                print("address    ", address)
+                address.save()
+                print("order   --")
+                order.billing_address = address
+                order.save()
+                messages.info(request, "address details saved!")
+                return redirect("checkout")
+            else:
+                messages.info(request, "checkout failed!")
+                return redirect("checkout")
+        except ObjectDoesNotExist:
+            print(order)
+            messages.warning(request, "You do not have an active order")
+            return redirect("/")
+        
+
+checkout_view = CheckoutView.as_view()
 
 
 
+# class PaymentView(View):
+#     def get(self, )

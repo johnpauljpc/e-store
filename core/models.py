@@ -1,6 +1,7 @@
 from django.db import models
 from django.shortcuts import reverse 
 from django.contrib.auth import get_user_model
+from .choices import NIGERIA_STATES, PAYMENT_OPTION
 
 # Create your models here.
 USER = get_user_model()
@@ -80,6 +81,7 @@ class Order(models.Model):
     start_date = models.DateTimeField(auto_now_add= True)
     ordered_date = models.DateTimeField()
     ordered = models.BooleanField(default=False)
+    billing_address = models.ForeignKey("BillingAddress",on_delete = models.SET_NULL, null = True, blank = True)
 
     def order_total(self):
         total = 0
@@ -89,3 +91,15 @@ class Order(models.Model):
 
     def __str__(self):
         return f'{self.user.first_name} | order'
+    
+
+class BillingAddress(models.Model):
+    user = models.ForeignKey(USER, on_delete = models.CASCADE)
+    shipping_zip = models.CharField(max_length = 100, null = False, blank = False)
+    state = models.CharField(choices = NIGERIA_STATES ,max_length=50)
+    shipping_address = models.CharField(max_length=100)
+    phone_number = models.CharField(max_length=100)
+    payment_option = models.CharField(choices = PAYMENT_OPTION, max_length = 50)
+
+    def __str__(self):
+        return f"{self.user.first_name} - address"
