@@ -1,6 +1,6 @@
 from django import forms
 
-from .choices import NIGERIA_STATES, PAYMENT_OPTION
+from .utils.choices import NIGERIA_STATES, PAYMENT_OPTION
 
 
 class CheckoutForm(forms.Form): 

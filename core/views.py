@@ -6,12 +6,15 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, DetailView
+from django.conf import settings
 
 
 
 
-from .models import Item, Order, OrderItem, Category, BillingAddress
+from .models import Item, Order, OrderItem, Category, BillingAddress, Payment
 from .forms import CheckoutForm
+from .utils import flutterwave
+
 
 
 
@@ -171,8 +174,19 @@ def remove_from_cart(request, slug):
 
 class CheckoutView(LoginRequiredMixin,View):
     def get(self, request):
+        print(request.user.id)
         form = CheckoutForm()
-        order = Order.objects.filter(user = request.user, ordered = False).first()
+        order = None
+        order_qs = Order.objects.filter(user = request.user, ordered = False)
+        print(order_qs)
+        try:
+            if order_qs.exists():
+                order = order_qs.filter()
+            else:
+                raise Exception
+        except:
+            messages.info(request, "You have no order!")
+            return redirect("/")   
         context = {
             "form":form,
             "order":order
@@ -182,15 +196,19 @@ class CheckoutView(LoginRequiredMixin,View):
     
     def post(self, request):
         form = CheckoutForm(request.POST)
-        order = Order.objects.filter(user = request.user, ordered = False).first()
-        context = {
-            "form":form,
-            "order":order
-        }
+        order = None
+        
         
         try:
             order = Order.objects.filter(user = request.user, ordered = False).first()
+            if order is None:
+                raise ObjectDoesNotExist
+            
             print("order")
+            context = {
+            "form":form,
+            "order":order
+            }
             
             if form.is_valid():
                 shipping_zip = form.cleaned_data.get('shipping_zip')
@@ -201,15 +219,16 @@ class CheckoutView(LoginRequiredMixin,View):
                 print("form    ", form.cleaned_data)
                 address = BillingAddress.objects.create(user = request.user, state=state,  shipping_zip=shipping_zip,
                                          shipping_address = shipping_address, 
-                                        phone_number = phone_number, 
-                                        payment_option=payment_option)
+                                        phone_number = phone_number)
                 print("address    ", address)
                 address.save()
                 print("order   --")
                 order.billing_address = address
                 order.save()
                 messages.info(request, "address details saved!")
-                return redirect("checkout")
+
+                # Redirects to payment view
+                return redirect("payment", payment_option = payment_option)
             else:
                 messages.info(request, "checkout failed!")
                 return redirect("checkout")
@@ -222,6 +241,64 @@ class CheckoutView(LoginRequiredMixin,View):
 checkout_view = CheckoutView.as_view()
 
 
+from django.http import HttpResponse
+import uuid
+class PaymentView(View):
+    def get(self, request, payment_option):
+        ref = str(timezone.now().date())+request.user.first_name+str(uuid.uuid4())
 
-# class PaymentView(View):
-#     def get(self, )
+        try:
+            order = Order.objects.filter(user = request.user, ordered = False).first()
+            if order is None:
+                raise Exception
+        except:
+            messages.warning(request, "You don't have any active order!")
+            return redirect("/")
+        payment = Payment.objects.create(
+            order = order,
+            customer = request.user,
+            ref = ref,
+            amount = order.order_total(),
+            payment_option = payment_option
+        )
+        payment.save()
+        order.payment = payment
+        order.save()
+    
+        if payment_option == "flutterwave":
+            try:
+                return redirect (flutterwave.process_payment(order, ref))
+            except Exception as error:
+                messages.error(request, f"error in flutterwave payment  {error}")
+        
+        elif payment_option == "paystack":
+            print("its paystack")
+            return redirect("confirm-payment", ref=ref)
+        else:
+            print("its invalid ")
+        
+        return HttpResponse(payment_option)
+    
+
+payment_view = PaymentView.as_view()
+
+
+# Confirm payment
+def confirm_payment(request, ref):
+    try:
+        payment = Payment.objects.get(ref = ref)
+        order = Order.objects.get(payment__ref = payment.ref)
+    except:
+        messages.error(request, "something is wrrong!")
+        return redirect("/")
+    
+    payment.completed = True
+    order.ordered = True
+    order.total = order.order_total()
+
+    payment.save()
+    order.save()
+
+    messages.success(request, "your payment is successful and confirmed")
+    return redirect('/')
+    return HttpResponse(f"{payment} |  {order.order_total()}")

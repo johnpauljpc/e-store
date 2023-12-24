@@ -36,10 +36,10 @@ NIGERIA_STATES = (
     ('YO', 'Yobe'),
     ('ZA', 'Zamfara'),
     ('FC', 'Federal Capital Territory'),
-    # Add more states as needed
+    
 )
 
 PAYMENT_OPTION = (
-    ('F', 'flutterwave'),
-    ('P', 'paystack')
+    ('flutterwave', 'Flutterwave'),
+    ('paystack', 'Paystack')
 )

@@ -1,7 +1,7 @@
 from django.db import models
 from django.shortcuts import reverse 
 from django.contrib.auth import get_user_model
-from .choices import NIGERIA_STATES, PAYMENT_OPTION
+from .utils.choices import NIGERIA_STATES, PAYMENT_OPTION
 
 # Create your models here.
 USER = get_user_model()
@@ -82,11 +82,15 @@ class Order(models.Model):
     ordered_date = models.DateTimeField()
     ordered = models.BooleanField(default=False)
     billing_address = models.ForeignKey("BillingAddress",on_delete = models.SET_NULL, null = True, blank = True)
+    payment = models.ForeignKey("Payment",on_delete = models.SET_NULL, null = True, blank = True)
+    total = models.FloatField(null = True, blank = True)
 
+ 
     def order_total(self):
         total = 0
         for ordered_item in self.items.all():
             total += ordered_item.get_final_total_price()
+        
         return total
 
     def __str__(self):
@@ -99,7 +103,17 @@ class BillingAddress(models.Model):
     state = models.CharField(choices = NIGERIA_STATES ,max_length=50)
     shipping_address = models.CharField(max_length=100)
     phone_number = models.CharField(max_length=100)
-    payment_option = models.CharField(choices = PAYMENT_OPTION, max_length = 50)
+    
 
     def __str__(self):
         return f"{self.user.first_name} - address"
+    
+class Payment(models.Model):
+    customer = models.ForeignKey(USER, on_delete = models.SET_NULL, null = True)
+    amount = models.FloatField()
+    payment_option = models.CharField(choices = PAYMENT_OPTION, max_length = 50)
+    ref = models.CharField(max_length=100, unique = True)
+    completed= models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"payment for {self.customer}'s order"

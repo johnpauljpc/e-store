@@ -2,7 +2,7 @@ from django.urls import path
 
 from .views import (HomeView, product_view, add_to_cart, remove_from_cart,
                      order_summary, increase_item_qty, decrease_item_qty, remove_item,
-                     checkout_view)
+                     checkout_view, payment_view, confirm_payment)
 
 urlpatterns=[
     path("", HomeView.as_view(), name="home"),
@@ -17,6 +17,8 @@ urlpatterns=[
     path("remove-from-cart/<slug:slug>/", remove_from_cart, name="remove-from-cart"),
 
     path("checkout/", checkout_view, name="checkout"),
+    path("payment/<str:payment_option>/", payment_view, name="payment"),
+    path("confirm-payment/<str:ref>/", confirm_payment, name="confirm-payment"),
 
 
 
