@@ -7,23 +7,26 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, DetailView
 from django.conf import settings
-
+from django.http import HttpResponse
+import uuid
 
 
 
 from .models import Item, Order, OrderItem, Category, BillingAddress, Payment
 from .forms import CheckoutForm
-from .utils import flutterwave
+from .utils import flutterwave, paystack
 
 
 
 
 # Create your views here.
+
 class HomeView(ListView):
     model = Item
     template_name = "core/home-page.html"
     context_object_name = "products"
     paginate_by = 4
+    ordering = ('-id')
 
 
 class ProductView(DetailView):
@@ -174,6 +177,7 @@ def remove_from_cart(request, slug):
 
 class CheckoutView(LoginRequiredMixin,View):
     def get(self, request):
+        print(request.user)
         print(request.user.id)
         form = CheckoutForm()
         order = None
@@ -182,6 +186,7 @@ class CheckoutView(LoginRequiredMixin,View):
         try:
             if order_qs.exists():
                 order = order_qs.filter()
+                print(order)
             else:
                 raise Exception
         except:
@@ -241,8 +246,7 @@ class CheckoutView(LoginRequiredMixin,View):
 checkout_view = CheckoutView.as_view()
 
 
-from django.http import HttpResponse
-import uuid
+
 class PaymentView(View):
     def get(self, request, payment_option):
         ref = str(timezone.now().date())+request.user.first_name+str(uuid.uuid4())
@@ -272,12 +276,15 @@ class PaymentView(View):
                 messages.error(request, f"error in flutterwave payment  {error}")
         
         elif payment_option == "paystack":
-            print("its paystack")
-            return redirect("confirm-payment", ref=ref)
+            try:
+                return redirect(paystack.process_payment(order, ref))
+            except Exception as err:
+                messages.error(request, f"error --->  {err}")
+                return redirect("/")
         else:
             print("its invalid ")
         
-        return HttpResponse(payment_option)
+        return HttpResponse(f"{payment_option} is invalid")
     
 
 payment_view = PaymentView.as_view()
@@ -285,13 +292,22 @@ payment_view = PaymentView.as_view()
 
 # Confirm payment
 def confirm_payment(request, ref):
+    status = request.GET.get('status')
+    am = request.GET.get('amount')
+    payment_opt = None
     try:
         payment = Payment.objects.get(ref = ref)
         order = Order.objects.get(payment__ref = payment.ref)
+        payment_opt = order.payment.payment_option
+
     except:
         messages.error(request, "something is wrrong!")
         return redirect("/")
     
+    # validate transaction of fluterwave
+    if payment_opt == "flutterwave":
+        if status != "successful":
+            return redirect('cancel-payment')
     payment.completed = True
     order.ordered = True
     order.total = order.order_total()
@@ -302,3 +318,7 @@ def confirm_payment(request, ref):
     messages.success(request, "your payment is successful and confirmed")
     return redirect('/')
     return HttpResponse(f"{payment} |  {order.order_total()}")
+
+def cancel_payment(request):
+    messages.warning(request, "payment cancelled (' _ ') !")
+    return redirect("checkout")

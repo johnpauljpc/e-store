@@ -26,15 +26,22 @@ def process_payment(order, ref):
     "title":"JPC Collection store",
     "description":"Best store in Nigeria",
     "logo":"https://avatars.githubusercontent.com/u/63419117?v=4"
-    }
+    },
     }
     url = 'https://api.flutterwave.com/v3/payments'
     
     try:
         response = requests.post(url, json=data, headers=hed)
         response=response.json()
+    
+        print(response)
         link=response['data']['link']
+        # print(link.status)
+        status = requests.get(link).status_code
+        print(status)
         return link
     except Exception as err:
         print("Errroooo   ", err)
         return "http://localhost:8000/"
+    
+
