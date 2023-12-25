@@ -48,11 +48,11 @@ class OrderSummaryView(LoginRequiredMixin,View):
                 "orders":orders, 
                 "items":items
             }
-            return render(request, "core/order_summary.html", context)
+            
         except:
             messages.info(request, "You do not have any active order!")
             return redirect("/")
-
+        return render(request, "core/order_summary.html", context)
     
 order_summary = OrderSummaryView.as_view()
 
@@ -181,13 +181,9 @@ class CheckoutView(LoginRequiredMixin,View):
         print(request.user.id)
         form = CheckoutForm()
         order = None
-        order_qs = Order.objects.filter(user = request.user, ordered = False)
-        print(order_qs)
         try:
-            if order_qs.exists():
-                order = order_qs.filter()
-                print(order)
-            else:
+            order = Order.objects.get(user = request.user, ordered = False)
+            if not(order.items.all().exists()):
                 raise Exception
         except:
             messages.info(request, "You have no order!")

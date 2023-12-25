@@ -10,6 +10,11 @@
 <div class="table-responsive text-nowrap">
 
 <h1>Order Summary</h1>
+
+{% if items.count is 0 %}
+<h2 class="text-center">Your cart is empty!</h2>
+<div class="text-center"><a class=" btn btn-default mr-2 " href="/"><li class="fas ">&#xf291;</li> Continue shopping<li class="fas ml-1 ">&#xf290;</li>   </a></div>
+{% else %}
 <b>total </b>- {{orders.order_total|number_to_words}} naira (&#8358;{{orders.order_total}})
 
   <table class="table">
@@ -25,6 +30,8 @@
     </thead>
     <tbody>
       {% for item in items %}
+     
+
       <tr>
         <td scope="col"><b>{{forloop.counter}}</b></td>
         <td>{{item.item.title}}</td>
@@ -43,8 +50,9 @@
        {%endif%}
      <a href="{% url 'remove-item' item.item.slug %}"> <li class=" text-danger fas fa-trash float-right"></li></a>
    </td>
-       
+    
       </tr>
+
       {% endfor %}
       <tr>
         
@@ -64,6 +72,7 @@
     </tbody>
   </table>
 &#xf291;
+{%endif%}
 </div>
 
 {% endblock content %}
