@@ -40,9 +40,7 @@ product_view = ProductView.as_view()
 class OrderSummaryView(LoginRequiredMixin,View):
     def get(self, request):
         try:
-            orders_qs = Order.objects.filter(user = request.user, ordered = False)
-           
-            orders = orders_qs.first()
+            orders = Order.objects.get(user = request.user, ordered = False)
             items = orders.items.all()
             context = {
                 "orders":orders, 
@@ -181,6 +179,7 @@ class CheckoutView(LoginRequiredMixin,View):
         print(request.user.id)
         form = CheckoutForm()
         order = None
+
         try:
             order = Order.objects.get(user = request.user, ordered = False)
             if not(order.items.all().exists()):
@@ -201,7 +200,7 @@ class CheckoutView(LoginRequiredMixin,View):
         
         
         try:
-            order = Order.objects.filter(user = request.user, ordered = False).first()
+            order = Order.objects.get(user = request.user, ordered = False)
             if order is None:
                 raise ObjectDoesNotExist
             
@@ -248,7 +247,7 @@ class PaymentView(View):
         ref = str(timezone.now().date())+request.user.first_name+str(uuid.uuid4())
 
         try:
-            order = Order.objects.filter(user = request.user, ordered = False).first()
+            order = Order.objects.get(user = request.user, ordered = False)
             if order is None:
                 raise Exception
         except:
