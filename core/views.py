@@ -12,8 +12,9 @@ import uuid
 
 
 
-from .models import Item, Order, OrderItem, Category, BillingAddress, Payment
-from .forms import CheckoutForm
+from .models import (Item, Order, OrderItem, Category,
+                      BillingAddress, Payment, Coupon)
+from .forms import CheckoutForm, CouponForm
 from .utils import flutterwave, paystack
 
 
@@ -178,10 +179,13 @@ class CheckoutView(LoginRequiredMixin,View):
         print(request.user)
         print(request.user.id)
         form = CheckoutForm()
+        couponform = CouponForm()
+        print("Coupon Code     >  ", couponform)
         order = None
 
         try:
             order = Order.objects.get(user = request.user, ordered = False)
+            
             if not(order.items.all().exists()):
                 raise Exception
         except:
@@ -189,6 +193,7 @@ class CheckoutView(LoginRequiredMixin,View):
             return redirect("/")   
         context = {
             "form":form,
+            'couponform':couponform,
             "order":order
         }
 
@@ -209,6 +214,7 @@ class CheckoutView(LoginRequiredMixin,View):
             "form":form,
             "order":order
             }
+
             
             if form.is_valid():
                 shipping_zip = form.cleaned_data.get('shipping_zip')
@@ -217,15 +223,27 @@ class CheckoutView(LoginRequiredMixin,View):
                 phone_number  = form.cleaned_data.get("phone_number")
                 payment_option = form.cleaned_data.get("payment_option")
                 print("form    ", form.cleaned_data)
-                address = BillingAddress.objects.create(user = request.user, state=state,  shipping_zip=shipping_zip,
+                
+                if order.billing_address:
+                    order.billing_address.user = request.user
+                    order.billing_address.state = state
+                    order.billing_address.shipping_zip = shipping_zip
+                    order.billing_address.shipping_address = shipping_address
+                    order.billing_address.phone_number = phone_number
+
+                    address = order.billing_address
+
+                    messages.info(request, "address details updated!")
+                else:
+                    messages.info(request, "address details saved!")
+                    address = BillingAddress(user = request.user, state=state,  shipping_zip=shipping_zip,
                                          shipping_address = shipping_address, 
                                         phone_number = phone_number)
-                print("address    ", address)
+                    
                 address.save()
-                print("order   --")
                 order.billing_address = address
                 order.save()
-                messages.info(request, "address details saved!")
+                
 
                 # Redirects to payment view
                 return redirect("payment", payment_option = payment_option)
@@ -304,7 +322,11 @@ def confirm_payment(request, ref):
         if status != "successful":
             return redirect('cancel-payment')
     payment.completed = True
+    ordered_items = order.items.all()
+    ordered_items.update(ordered = True)
     order.ordered = True
+
+
     order.total = order.order_total()
 
     payment.save()
@@ -315,5 +337,34 @@ def confirm_payment(request, ref):
     return HttpResponse(f"{payment} |  {order.order_total()}")
 
 def cancel_payment(request):
-    messages.warning(request, "payment cancelled (' _ ') !")
+    messages.warning(request, "payment not completed!")
     return redirect("checkout")
+
+
+
+# COUPON CODE
+def get_coupon(request, code):
+    try:
+        coupon = Coupon.objects.get(code=code)
+        messages.success(request, "Coupon successfully applied")
+        return coupon
+    except ObjectDoesNotExist:
+        messages.info(request, "Coupon does not exist!")
+        return None
+    
+
+def add_coupon(request):
+    if request.method == 'POST':
+        form = CouponForm(request.POST or None)
+        if form.is_valid():
+            code = form.cleaned_data.get('code')
+            try:
+                order = Order.objects.get(user = request.user, ordered = False)
+                order.coupon = get_coupon(request=request, code=code)
+                order.save()
+                
+                return redirect("checkout")
+            except ObjectDoesNotExist:
+                messages.info(request, "You have no active order!")
+                return redirect('/')
+    return redirect('checkout')

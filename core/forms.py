@@ -1,4 +1,5 @@
 from django import forms
+from .models import Coupon
 
 from .utils.choices import NIGERIA_STATES, PAYMENT_OPTION
 
@@ -24,3 +25,19 @@ class CheckoutForm(forms.Form):
 
 
     payment_option = forms.ChoiceField(widget=forms.RadioSelect, choices=PAYMENT_OPTION)
+
+
+
+class CouponForm(forms.ModelForm):
+    class Meta:
+        model = Coupon
+        fields = ['code']
+
+        widgets = {
+            'code':forms.TextInput(attrs={
+                'placeholder':'Coupon code',
+                'class':'form-control',
+                'arial-label':'Recipient\'s username',
+                'arial-describedby': 'basic-addon2'
+            })
+        }

@@ -2,7 +2,8 @@ from django.urls import path
 
 from .views import (HomeView, product_view, add_to_cart, remove_from_cart,
                      order_summary, increase_item_qty, decrease_item_qty, remove_item,
-                     checkout_view, payment_view, confirm_payment, cancel_payment)
+                     checkout_view, payment_view, confirm_payment, cancel_payment,
+                     add_coupon)
 
 urlpatterns=[
     path("", HomeView.as_view(), name="home"),
@@ -21,6 +22,8 @@ urlpatterns=[
     path("confirm-payment/<str:ref>/", confirm_payment, name="confirm-payment"),
 
     path("cancel-payment/", cancel_payment, name="cancel-payment"),
+
+    path("apply-coupon/", add_coupon, name="apply-coupon"),
 
 
 

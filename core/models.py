@@ -25,6 +25,7 @@ class Item(models.Model):
     discount_price = models.FloatField(null = True, blank = True)
     category = models.ForeignKey(Category, on_delete = models.CASCADE)
     label = models.CharField(choices = LABEL_CHOICES, max_length=10)
+    image = models.ImageField(upload_to = "items/",  default = "items/imagePL.svg")
     description = models.TextField()
     slug = models.SlugField()
 
@@ -83,6 +84,7 @@ class Order(models.Model):
     ordered = models.BooleanField(default=False)
     billing_address = models.ForeignKey("BillingAddress",on_delete = models.SET_NULL, null = True, blank = True)
     payment = models.ForeignKey("Payment",on_delete = models.SET_NULL, null = True, blank = True)
+    coupon = models.ForeignKey("Coupon",on_delete = models.SET_NULL, null = True, blank = True)
     total = models.FloatField(null = True, blank = True)
 
  
@@ -90,7 +92,8 @@ class Order(models.Model):
         total = 0
         for ordered_item in self.items.all():
             total += ordered_item.get_final_total_price()
-        
+        if self.coupon:
+            total -= self.coupon.amount
         return total
 
     def __str__(self):
@@ -117,3 +120,11 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"payment for {self.customer}'s order"
+
+
+class Coupon(models.Model):
+    code = models.CharField(max_length = 15)
+    amount = models.FloatField()
+
+    def __str__(self):
+        return self.code
