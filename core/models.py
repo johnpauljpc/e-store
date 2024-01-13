@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from django.db import models
 from django.shortcuts import reverse 
 from django.contrib.auth import get_user_model
@@ -73,8 +74,10 @@ class OrderItem(models.Model):
         else:
             return self.get_total_item_price()
 
+
     def __str__(self):
         return f"{self.quantity} of {self.item.title}"
+    
 
 class Order(models.Model):
     user = models.ForeignKey(USER, on_delete=models.CASCADE)
@@ -87,7 +90,9 @@ class Order(models.Model):
     coupon = models.ForeignKey("Coupon",on_delete = models.SET_NULL, null = True, blank = True)
     total = models.FloatField(null = True, blank = True)
 
- 
+    def display_items(self):
+        return ', '.join(i.item.title for i in self.items.all()[:3])
+    @property
     def order_total(self):
         total = 0
         for ordered_item in self.items.all():
@@ -95,6 +100,16 @@ class Order(models.Model):
         if self.coupon:
             total -= self.coupon.amount
         return total
+    
+    # save
+    def save(self, *args, **kwargs):
+        self.total = self.order_total
+        return super().save(*args, **kwargs)
+    
+
+
+
+
 
     def __str__(self):
         return f'{self.user.first_name} | order'
@@ -109,7 +124,7 @@ class BillingAddress(models.Model):
     
 
     def __str__(self):
-        return f"{self.user.first_name} - address"
+        return f"{self.user.first_name} - {self.state}"
     
 class Payment(models.Model):
     customer = models.ForeignKey(USER, on_delete = models.SET_NULL, null = True)

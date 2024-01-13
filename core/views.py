@@ -66,10 +66,12 @@ def increase_item_qty(request, slug):
         if order.items.filter(item__slug = item.slug).exists():
             ordered_item.quantity += 1
             ordered_item.save()
+            
             messages.info(request, "cart updated!")
         else:
             order.items.add(ordered_item)
             # order_item.quantity += 1
+        order.save()
         return redirect("order-summary")
     else:
         messages.info(request, "You dont have an active order!")
@@ -95,6 +97,7 @@ def decrease_item_qty(request, slug):
     else:
         messages.info(request, "You have no active order!")
 
+    order.save()
     return redirect("order-summary")
 
 # Removes an ordered item in the order summary page
@@ -114,6 +117,7 @@ def remove_item(request, slug):
             messages.info(request, f'you have no order for {item}!')
     else:
         messages.info(request, "You have no active order!")
+    order.save()
     return redirect("order-summary")
 
 
@@ -132,6 +136,7 @@ def add_to_cart(request, slug):
         if order.items.filter(item__slug = item.slug).exists():
             ordered_item.quantity += 1
             ordered_item.save()
+         
             messages.info(request, "Item increased by one")
         else:
             order.items.add(ordered_item)
@@ -141,6 +146,7 @@ def add_to_cart(request, slug):
         order = Order.objects.create(user=request.user, ordered_date=current_time)
         order.items.add(ordered_item)
         messages.info(request, "cart updated")
+    order.save()
     return redirect("product", slug=slug)
 
 def remove_from_cart(request, slug):
@@ -170,7 +176,7 @@ def remove_from_cart(request, slug):
         return redirect("product", slug=slug)
 
     
-    print('---> ', order_item)
+    order.save()
     return redirect("product", slug=slug)
 
 
